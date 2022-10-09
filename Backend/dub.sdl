@@ -1,0 +1,5 @@
+name "streaming-backend"
+description "Backend for streaming software"
+authors "ZyeByte"
+copyright "Copyright © 2022, ZyeByte"
+license "proprietary"

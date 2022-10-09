@@ -1,0 +1,15 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/streaming-backend
+streaming-backend.so
+streaming-backend.dylib
+streaming-backend.dll
+streaming-backend.a
+streaming-backend.lib
+streaming-backend-test-*
+*.exe
+*.o
+*.obj
+*.lst
