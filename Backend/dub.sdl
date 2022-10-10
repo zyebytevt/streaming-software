@@ -1,5 +1,6 @@
 name "streaming-backend"
-description "Backend for streaming software"
+description "A simple vibe.d server application."
 authors "ZyeByte"
 copyright "Copyright © 2022, ZyeByte"
-license "proprietary"
+license "GPL"
+dependency "vibe-d" version="~>0.9"
