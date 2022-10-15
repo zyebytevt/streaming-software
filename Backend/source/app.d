@@ -1,70 +1,16 @@
-import vibe.vibe;
+module app;
 
 // Remove openssl dependecy from dub.selections.json and reload import paths
 // to get code completion to work
 // TODO: scriptify
 
-/*@path("/")
-interface TestAPIInterface
-{
-@safe:
-	// GET /api/greeting
-	@property string greeting();
-
-	// PUT /api/greeting
-	@property void greeting(string text);
-
-	// POST /api/users
-	@path("/users")
-	void addNewUser(string name);
-
-	// GET /api/users
-	@property string[] users();
-
-	// GET /api/:id/name
-	string getName(int id);
-}
-
-class TestAPI : TestAPIInterface
-{
-@safe:
-	private {
-		string m_greeting;
-		string[] m_users;
-	}
-
-	@property string greeting() { return m_greeting; }
-	@property void greeting(string text) { m_greeting = text; }
-
-	void addNewUser(string name) { m_users ~= name; }
-
-	@property string[] users() { return m_users; }
-
-	string getName(int id) { return m_users[id]; }
-}
-
-void main()
-{
-	auto settings = new HTTPServerSettings();
-	settings.port = 8080;
-	settings.bindAddresses = ["::1", "127.0.0.1"];
-
-	auto router = new URLRouter();
-	router.registerRestInterface(new TestAPI());
-
-	auto listener = listenHTTP(settings, router);
-	scope (exit)
-	{
-		listener.stopListening();
-	}
-
-	runApplication();
-}*/
-
 import std.stdio;
 import std.conv : to;
 
-import obs;
+import vibe.vibe;
+
+import starburst.settings;
+import starburst.subsystem.obs;
 
 @path("/obs")
 interface OBSAPI
@@ -86,10 +32,13 @@ public:
 	this()
 	{
 		mClient = new OBSWebSocketClient();
-		mClient.password = "Ztx0kvDzVlZaYwQZ";
-		mClient.eventSubscription = OBSEventSubscription.none;
 
-		mClient.connect();
+		OBSWebSocketClient.ConnectArgs args;
+
+		args.password = "WKHtaaJmk2jkxXSv";
+		args.eventSubscription = EventSubscription.none;
+
+		mClient.connect(args);
 	}
 
 	~this()
@@ -99,21 +48,25 @@ public:
 
 	void setScene(string name)
 	{
-		mClient.sendData(OBSMessageDataRequest("SetCurrentProgramScene", "", parseJsonString(`{ "sceneName":"` ~ name ~ `" }`)));
-		OBSMessageDataRequestResponse response = mClient.receiveData!OBSMessageDataRequestResponse();
+		mClient.sendMessageData(SerializedRequestData("SetCurrentProgramScene", "", parseJsonString(`{ "sceneName":"` ~ name ~ `" }`)));
+		SerializedRequestResponseData response = mClient.receiveMessageData!SerializedRequestResponseData();
 	}
 
 	string getScene()
 	{
-		mClient.sendData(OBSMessageDataRequest("GetCurrentProgramScene", "", Json.emptyObject));
-		OBSMessageDataRequestResponse response = mClient.receiveData!OBSMessageDataRequestResponse();
+		mClient.sendMessageData(SerializedRequestData("GetCurrentProgramScene", "", Json.emptyObject));
+		SerializedRequestResponseData response = mClient.receiveMessageData!SerializedRequestResponseData();
 
 		return response.responseData["currentProgramSceneName"].get!string;
 	}
 }
 
+Settings globalSettings;
+
 void main()
 {
+	globalSettings = Settings.loadFromFile("settings.json");
+
 	auto settings = new HTTPServerSettings();
 	settings.port = 8080;
 	settings.bindAddresses = ["::1", "127.0.0.1"];

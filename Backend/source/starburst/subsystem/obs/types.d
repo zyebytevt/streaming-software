@@ -1,8 +1,10 @@
-module obs.types;
+module starburst.subsystem.obs.types;
 
 import vibe.vibe;
 
-enum OBSWebSocketOpCode
+// ENUMS
+
+enum WebSocketOpCode
 {
     hello = 0,
     identify = 1,
@@ -15,7 +17,32 @@ enum OBSWebSocketOpCode
     requestBatchResponse = 9,
 }
 
-enum OBSEventSubscription
+enum WebSocketCloseCode
+{
+    dontClose = 0,
+    unknownReason = 4000,
+    messageDecodeError = 4002,
+    missingDataField = 4003,
+    invalidDataFieldType = 4004,
+    invalidDataFieldValue = 4005,
+    unknownOpCode = 4006,
+    notIdentified = 4007,
+    alreadyIdentified = 4008,
+    authenticationFailed = 4009,
+    unsupportedRpcVersion = 4010,
+    sessionInvalidated = 4011,
+    unsupportedFeature = 4012,
+}
+
+enum RequestBatchExecutionType
+{
+    none = -1,
+    serialRealtime = 0,
+    serialFrame = 1,
+    parallel = 2
+}
+
+enum EventSubscription
 {
     none = 0,
     general = 1 << 0,
@@ -36,7 +63,7 @@ enum OBSEventSubscription
     sceneItemTransformChanged = 1 << 19,
 }
 
-enum OBSRequestStatusCode
+enum RequestStatus
 {
     unknown = 0,
     noError = 10,
@@ -72,19 +99,23 @@ enum OBSRequestStatusCode
     cannotAct = 703,
 }
 
-struct OBSMessage
+// UDAs
+
+struct boundOpCode
 {
-    OBSWebSocketOpCode op;
+    WebSocketOpCode opCode;
+}
+
+// MESSAGES
+
+struct WebSocketMessage
+{
+    WebSocketOpCode op;
     Json d;
 }
 
-struct obsDataOpCode
-{
-    OBSWebSocketOpCode opCode;
-}
-
-@obsDataOpCode(OBSWebSocketOpCode.hello)
-struct OBSMessageDataHello
+@boundOpCode(WebSocketOpCode.hello)
+struct SerializedHelloData
 {
     struct Authentication
     {
@@ -97,54 +128,70 @@ struct OBSMessageDataHello
     @optional Authentication authentication;
 }
 
-@obsDataOpCode(OBSWebSocketOpCode.identify)
-struct OBSMessageDataIdentify
+@boundOpCode(WebSocketOpCode.identify)
+struct SerializedIdentifyData
 {
     int rpcVersion;
-    OBSEventSubscription eventSubscriptions = OBSEventSubscription.all;
+    @optional EventSubscription eventSubscriptions = EventSubscription.all;
     @optional string authentication;
 }
 
-@obsDataOpCode(OBSWebSocketOpCode.identified)
-struct OBSMessageDataIdentified
+@boundOpCode(WebSocketOpCode.identified)
+struct SerializedIdentifiedData
 {
     int negotiatedRpcVersion;
 }
 
-@obsDataOpCode(OBSWebSocketOpCode.reidentify)
-struct OBSMessageDataReidentify
+@boundOpCode(WebSocketOpCode.reidentify)
+struct SerializedReidentifyData
 {
-    OBSEventSubscription eventSubscriptions = OBSEventSubscription.all;
+    @optional EventSubscription eventSubscriptions = EventSubscription.all;
 }
 
-@obsDataOpCode(OBSWebSocketOpCode.event)
-struct OBSMessageDataEvent
+@boundOpCode(WebSocketOpCode.event)
+struct SerializedEventData
 {
     string eventType;
-    OBSEventSubscription eventIntent;
+    EventSubscription eventIntent;
     @optional Json eventData;
 }
 
-@obsDataOpCode(OBSWebSocketOpCode.request)
-struct OBSMessageDataRequest
+@boundOpCode(WebSocketOpCode.request)
+struct SerializedRequestData
 {
     string requestType;
     string requestId;
     @optional Json requestData;
 }
 
-@obsDataOpCode(OBSWebSocketOpCode.requestResponse)
-struct OBSMessageDataRequestResponse
+@boundOpCode(WebSocketOpCode.requestResponse)
+struct SerializedRequestResponseData
 {
-    struct RequestStatus
+    struct RequestStatusData
     {
         bool result;
-        OBSRequestStatusCode code;
+        RequestStatus code;
         @optional string comment;
     }
 
     string requestType;
     string requestId;
-    RequestStatus requestStatus;
+    RequestStatusData requestStatus;
     @optional Json responseData;
+}
+
+@boundOpCode(WebSocketOpCode.requestBatch)
+struct SerializedRequestBatchData
+{
+    string requestId;
+    @optional bool haltOnFailure = false;
+    @optional RequestBatchExecutionType executionType = RequestBatchExecutionType.serialRealtime;
+    Json[] requests;
+}
+
+@boundOpCode(WebSocketOpCode.requestBatchResponse)
+struct SerializedRequestBatchResponseData
+{
+    string requestId;
+    Json[] results;
 }

@@ -13,3 +13,4 @@ streaming-backend-test-*
 *.o
 *.obj
 *.lst
+settings.json
